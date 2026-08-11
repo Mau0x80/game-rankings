@@ -10,17 +10,18 @@
     "sync-data": "node scripts/sync-data.mjs"
   },
   "dependencies": {
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
     "@tanstack/react-table": "^8.20.5",
-    "@tanstack/react-virtual": "^3.10.9"
+    "@tanstack/react-virtual": "^3.10.9",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@types/node": "^26.2.0",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.3",
+    "csv-parse": "^5.5.6",
     "typescript": "^5.6.3",
-    "vite": "^5.4.10",
-    "csv-parse": "^5.5.6"
+    "vite": "^5.4.10"
   }
 }
