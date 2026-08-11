@@ -4,14 +4,23 @@ import { loadGames } from './data/loadGames';
 import { GameTable } from './components/GameTable';
 import { PlatformFilter } from './components/PlatformFilter';
 import { SearchBox } from './components/SearchBox';
+import { ReviewsFilter } from './components/ReviewsFilter';
 import { useGameFilters } from './hooks/useGameFilters';
 
 const games = loadGames();
 
 export default function App() {
   const [sorting, setSorting] = useState<SortingState>([{ id: 'bayesianAvg', desc: true }]);
-  const { selectedPlatforms, setSelectedPlatforms, search, setSearch, filtered } =
-    useGameFilters(games);
+  const {
+    selectedPlatforms,
+    setSelectedPlatforms,
+    search,
+    setSearch,
+    minReviews,
+    setMinReviews,
+    filtered,
+    clearFilters,
+  } = useGameFilters(games);
 
   return (
     <div className="app">
@@ -22,6 +31,10 @@ export default function App() {
       <div className="filter-bar">
         <PlatformFilter selected={selectedPlatforms} onChange={setSelectedPlatforms} />
         <SearchBox value={search} onChange={setSearch} />
+        <ReviewsFilter value={minReviews} onChange={setMinReviews} />
+        <button type="button" className="clear-filters-btn" onClick={clearFilters}>
+          Limpiar filtros
+        </button>
       </div>
       <GameTable games={filtered} sorting={sorting} onSortingChange={setSorting} />
     </div>
