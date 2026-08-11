@@ -33,7 +33,7 @@ El sheet seguirá siendo la fuente de verdad para agregar juegos en el futuro (l
 
 **Estilo "Dark Data Dashboard":** fondo oscuro (`#0b0e14` / `#141824`), tipografía de sistema (sans-serif técnica), acentos teal (`#7dd3c0`) y ámbar (`#f0b429`) para resaltar scores altos. Badges de plataforma como chips pequeños. Se siente como una herramienta de datos seria, no una página editorial ni un sitio retro-arcade. Referencia visual acordada durante el brainstorming (mockups A/B/C, se eligió A).
 
-**Densidad de la tabla:** híbrido — fila de tabla densa (como el sitio original) pero con una miniatura pequeña de la carátula al inicio de cada fila, para darle más peso visual sin sacrificar la cantidad de juegos visibles por pantalla.
+**Densidad de la tabla:** tabla densa (como el sitio original), sin miniatura de carátula. El diseño original contemplaba un híbrido con una miniatura pequeña al inicio de cada fila, pero se descartó tras el lanzamiento: las URLs de imagen del dump de 2019 apuntan a `gamefaqs1.cbsistatic.com`, cuyo certificado TLS expiró en mayo de 2025 (CBS Interactive migró GameFAQs a `gamefaqs.gamespot.com`), por lo que ningún navegador puede cargar esas portadas hoy. Se retiró el campo `image`/`i` de todo el pipeline de datos (sync script, tipos, loader) en vez de dejarlo como peso muerto.
 
 ## Arquitectura y stack técnico
 
@@ -46,7 +46,7 @@ Se descartó una alternativa sin framework (HTML/CSS/JS plano) porque virtualiza
 ## UX y funcionalidad
 
 **Tabla principal (vista única, sin rutas por ahora):**
-- Columnas: rank/#, miniatura (carátula), título, plataforma (badge), año, desarrollador, # reviews, score.
+- Columnas: rank/#, título, plataforma (badge), año, desarrollador, # reviews, score. (Sin columna de miniatura — ver "Dirección visual".)
 - Score por defecto mostrado y usado para ordenar: **Bayesian AVG** (columna `bayesian avg` del sheet), igual que el sitio original. Se puede exponer también el "avg score" simple (columna `avg score`) como dato secundario si cabe en el layout.
 - Click en encabezado de columna ordena asc/desc: título, año, score, # reviews.
 - Orden por defecto: Bayesian AVG descendente.
@@ -55,7 +55,7 @@ Se descartó una alternativa sin framework (HTML/CSS/JS plano) porque virtualiza
 
 **Filtros:**
 - Plataforma: chips/botones toggle, selección múltiple, con opción "todas". Lista de plataformas: PC, MAC, PS, PS2, PS3, PS4, PSP, VITA, SNES, N64, GC, WII, WIIU, NS, GB, GBC, GBA, DS, 3DS, XBOX, X360, XONE, GEN, SCD, SAT, DC, MOBI, NGE, IOS (las mismas del sitio original).
-- Búsqueda de texto libre por título (substring, insensible a mayúsculas/acentos).
+- Búsqueda de texto libre por título o desarrollador (substring, insensible a mayúsculas/acentos; la búsqueda por desarrollador es feedback post-lanzamiento, no estaba en el alcance MVP original).
 - Reviews mínimas: input/slider numérico (replica la vista "3+ reviews" ya existente en el Sheet).
 - Botón "Limpiar filtros".
 
