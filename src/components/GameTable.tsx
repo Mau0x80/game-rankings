@@ -20,10 +20,11 @@ const columns = [
     // (TanStack keeps Row objects' `.index` fixed at core-row-model creation
     // time — getSortedRowModel reorders the `rows` array but never touches
     // it). Using it here would silently show pre-sort positions after any
-    // sort other than the coincidentally-matching default. Look up the row's
-    // actual position in the current (sorted) row model instead.
-    cell: (info) =>
-      info.table.getRowModel().rows.findIndex((r) => r.id === info.row.id) + 1,
+    // sort other than the coincidentally-matching default. The actual rank
+    // is rendered directly from `virtualRow.index` in the row-mapping loop
+    // below (O(1), since that index already IS the row's position in the
+    // current sorted/filtered `rows` array) instead of being computed here
+    // via an O(n) findIndex scan on every render.
     size: 40,
   }),
   columnHelper.accessor('image', {
@@ -87,6 +88,14 @@ export function GameTable({ games, sorting, onSortingChange }: GameTableProps) {
       const next = typeof updater === 'function' ? updater(sorting) : updater;
       onSortingChange(next);
     },
+    // Row identity must track the game, not its array index. Without this,
+    // TanStack falls back to using array index as row id, so when the
+    // `games` array changes (filtering/searching), the same row id can
+    // suddenly refer to a different game. React then reuses that row's
+    // DOM nodes (e.g. the cover <img>) for the new game, including any
+    // imperative state an event handler left on it (like onError hiding a
+    // broken image), which leaks stale visuals onto unrelated games.
+    getRowId: (game) => String(game.id),
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     // Without this, TanStack's default 3-state toggle (asc -> desc -> unsorted)
@@ -150,7 +159,9 @@ export function GameTable({ games, sorting, onSortingChange }: GameTableProps) {
                   key={cell.id}
                   style={{ width: cell.column.getSize() }}
                 >
-                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  {cell.column.id === 'rank'
+                    ? virtualRow.index + 1
+                    : flexRender(cell.column.columnDef.cell, cell.getContext())}
                 </div>
               ))}
             </div>
