@@ -2,19 +2,25 @@ import { useState } from 'react';
 import type { SortingState } from '@tanstack/react-table';
 import { loadGames } from './data/loadGames';
 import { GameTable } from './components/GameTable';
+import { PlatformFilter } from './components/PlatformFilter';
+import { useGameFilters } from './hooks/useGameFilters';
 
 const games = loadGames();
 
 export default function App() {
   const [sorting, setSorting] = useState<SortingState>([{ id: 'bayesianAvg', desc: true }]);
+  const { selectedPlatforms, setSelectedPlatforms, filtered } = useGameFilters(games);
 
   return (
     <div className="app">
       <header className="app-header">
         <h1>Game Rankings</h1>
-        <p className="subtitle">{games.length} juegos</p>
+        <p className="subtitle">{filtered.length} de {games.length} juegos</p>
       </header>
-      <GameTable games={games} sorting={sorting} onSortingChange={setSorting} />
+      <div className="filter-bar">
+        <PlatformFilter selected={selectedPlatforms} onChange={setSelectedPlatforms} />
+      </div>
+      <GameTable games={filtered} sorting={sorting} onSortingChange={setSorting} />
     </div>
   );
 }
