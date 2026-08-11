@@ -49,3 +49,48 @@ body {
   font-size: 12px;
   color: var(--color-text-muted);
 }
+
+.game-table-scroll {
+  flex: 1;
+  overflow: auto;
+  position: relative;
+}
+
+.game-table-head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--color-bg-alt);
+}
+
+.game-table-row {
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.game-table-row--head {
+  font-size: 11px;
+  text-transform: uppercase;
+  color: var(--color-text-faint);
+  user-select: none;
+}
+
+.game-table-cell {
+  padding: 6px 10px;
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 0;
+}
+
+.platform-badge {
+  display: inline-block;
+  background: var(--color-bg);
+  color: var(--color-accent);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  font-size: 10px;
+  padding: 2px 6px;
+}
