@@ -7,4 +7,9 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   plugins: [react()],
   base: process.env.VITE_BASE_PATH ?? '/',
+  // Emit imported JSON as a JSON.parse("...") call rather than an inlined
+  // JS object-literal expression. For a payload this size (~28,865 game
+  // records), JSON.parse is meaningfully faster for engines to parse than
+  // an equivalent object-literal expression, which speeds up first paint.
+  json: { stringify: true },
 });
