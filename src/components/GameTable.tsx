@@ -27,22 +27,6 @@ const columns = [
     // via an O(n) findIndex scan on every render.
     size: 40,
   }),
-  columnHelper.accessor('image', {
-    header: '',
-    enableSorting: false,
-    size: 44,
-    cell: (info) => (
-      <img
-        src={info.getValue()}
-        alt=""
-        loading="lazy"
-        style={{ width: 28, height: 28, objectFit: 'cover', borderRadius: 4 }}
-        onError={(e) => {
-          e.currentTarget.style.visibility = 'hidden';
-        }}
-      />
-    ),
-  }),
   columnHelper.accessor('title', {
     header: 'Título',
     size: 320,
@@ -91,10 +75,8 @@ export function GameTable({ games, sorting, onSortingChange }: GameTableProps) {
     // Row identity must track the game, not its array index. Without this,
     // TanStack falls back to using array index as row id, so when the
     // `games` array changes (filtering/searching), the same row id can
-    // suddenly refer to a different game. React then reuses that row's
-    // DOM nodes (e.g. the cover <img>) for the new game, including any
-    // imperative state an event handler left on it (like onError hiding a
-    // broken image), which leaks stale visuals onto unrelated games.
+    // suddenly refer to a different game, and React would reuse that row's
+    // DOM nodes (and any imperative state left on them) for the new game.
     getRowId: (game) => String(game.id),
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),

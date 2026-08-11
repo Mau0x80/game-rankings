@@ -6,7 +6,6 @@ export interface Game {
   avgScore: number;
   reviews: number;
   developer: string;
-  image: string;
   bayesianAvg: number;
 }
 
@@ -18,6 +17,5 @@ export interface RawGame {
   a: number;
   r: number;
   d: string;
-  i: string;
   b: number;
 }

@@ -9,6 +9,9 @@ const OUTPUT_PATH = new URL('../src/data/games.json', import.meta.url);
 // Explicit column order (rather than trusting the sheet's own header row)
 // because the sheet has extra, unnamed documentation columns after
 // "bayesian avg" that would otherwise collide as duplicate empty headers.
+// "image" must stay in this list to keep the later columns aligned with
+// their actual sheet position, even though it's dropped from the output
+// below — the cover-art CDN it points to has been dead since 2025.
 const COLUMNS = [
   'id',
   'title',
@@ -51,7 +54,6 @@ async function main() {
       a: Number(row.avgScore) || 0,
       r: Number(row.reviews) || 0,
       d: (row.developer ?? '').trim(),
-      i: (row.image ?? '').trim(),
       b: Number(row.bayesianAvg) || 0,
     });
   }

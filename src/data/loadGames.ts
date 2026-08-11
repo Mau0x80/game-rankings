@@ -10,7 +10,6 @@ export function loadGames(): Game[] {
     avgScore: g.a,
     reviews: g.r,
     developer: g.d,
-    image: g.i,
     bayesianAvg: g.b,
   }));
 }
