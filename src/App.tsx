@@ -4,9 +4,11 @@ const games = loadGames();
 
 export default function App() {
   return (
-    <div style={{ padding: 24, fontFamily: 'system-ui, sans-serif' }}>
-      <h1>Game Rankings</h1>
-      <p>{games.length} juegos cargados.</p>
+    <div className="app">
+      <header className="app-header">
+        <h1>Game Rankings</h1>
+        <p className="subtitle">{games.length} juegos</p>
+      </header>
     </div>
   );
 }
