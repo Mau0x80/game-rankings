@@ -8,7 +8,7 @@ export function SearchBox({ value, onChange }: SearchBoxProps) {
     <input
       type="text"
       className="search-box"
-      placeholder="Buscar por título..."
+      placeholder="Buscar por título o desarrollador..."
       value={value}
       onChange={(e) => onChange(e.target.value)}
     />
