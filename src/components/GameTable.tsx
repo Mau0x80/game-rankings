@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useLayoutEffect, useRef } from 'react';
 import {
   createColumnHelper,
   flexRender,
@@ -111,15 +111,15 @@ export function GameTable({ games, sorting, onSortingChange }: GameTableProps) {
   // (a new filter/search narrowed the data, or the sort order changed) —
   // otherwise the user is left scrolled to an arbitrary offset into a
   // list that no longer matches what put them there.
-  useEffect(() => {
+  useLayoutEffect(() => {
     parentRef.current?.scrollTo({ top: 0 });
   }, [games, sorting]);
 
   return (
-    <div className="game-table-scroll" ref={parentRef}>
-      <div className="game-table-head" style={{ width: totalWidth }}>
+    <div className="game-table-scroll" ref={parentRef} role="table">
+      <div className="game-table-head" role="rowgroup" style={{ width: totalWidth, minWidth: '100%' }}>
         {table.getHeaderGroups().map((headerGroup) => (
-          <div className="game-table-row game-table-row--head" key={headerGroup.id}>
+          <div className="game-table-row game-table-row--head" role="row" key={headerGroup.id}>
             {headerGroup.headers.map((header) => {
               const canSort = header.column.getCanSort();
               const sortDirection = header.column.getIsSorted();
@@ -159,19 +159,29 @@ export function GameTable({ games, sorting, onSortingChange }: GameTableProps) {
       {rows.length === 0 ? (
         <p className="empty-state">No se encontraron juegos con estos filtros.</p>
       ) : (
-        <div style={{ height: virtualizer.getTotalSize(), width: totalWidth, position: 'relative' }}>
+        <div
+          role="rowgroup"
+          style={{
+            height: virtualizer.getTotalSize(),
+            width: totalWidth,
+            minWidth: '100%',
+            position: 'relative',
+          }}
+        >
           {virtualizer.getVirtualItems().map((virtualRow) => {
             const row = rows[virtualRow.index];
             const isAlt = virtualRow.index % 2 === 1;
             return (
               <div
                 className={isAlt ? 'game-table-row game-table-row--alt' : 'game-table-row'}
+                role="row"
                 key={row.id}
                 style={{
                   position: 'absolute',
                   top: 0,
                   left: 0,
                   width: totalWidth,
+                  minWidth: '100%',
                   height: virtualRow.size,
                   transform: `translateY(${virtualRow.start}px)`,
                 }}
@@ -179,6 +189,7 @@ export function GameTable({ games, sorting, onSortingChange }: GameTableProps) {
                 {row.getVisibleCells().map((cell) => (
                   <div
                     className="game-table-cell"
+                    role="cell"
                     key={cell.id}
                     style={{ width: cell.column.getSize() }}
                   >
