@@ -21,6 +21,7 @@ export function PlatformFilter({ selected, onChange }: PlatformFilterProps) {
       <button
         type="button"
         className={selected.size === 0 ? 'chip chip--active' : 'chip'}
+        aria-pressed={selected.size === 0}
         onClick={() => onChange(new Set())}
       >
         Todas
@@ -30,6 +31,7 @@ export function PlatformFilter({ selected, onChange }: PlatformFilterProps) {
           key={platform}
           type="button"
           className={selected.has(platform) ? 'chip chip--active' : 'chip'}
+          aria-pressed={selected.has(platform)}
           onClick={() => toggle(platform)}
         >
           {platform}
