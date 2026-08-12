@@ -14,10 +14,22 @@ function normalize(value: string): string {
   return value.normalize('NFD').replace(DIACRITICS_RE, '').toLowerCase();
 }
 
-export function useGameFilters(games: Game[]) {
-  const [selectedPlatforms, setSelectedPlatforms] = useState<Set<string>>(new Set());
-  const [search, setSearch] = useState('');
-  const [minReviews, setMinReviews] = useState(0);
+export interface GameFiltersInitial {
+  platforms: string[];
+  search: string;
+  minReviews: number;
+  minYear: number | null;
+  maxYear: number | null;
+}
+
+export function useGameFilters(games: Game[], initial?: GameFiltersInitial) {
+  const [selectedPlatforms, setSelectedPlatforms] = useState<Set<string>>(
+    () => new Set(initial?.platforms ?? []),
+  );
+  const [search, setSearch] = useState(initial?.search ?? '');
+  const [minReviews, setMinReviews] = useState(initial?.minReviews ?? 0);
+  const [minYear, setMinYear] = useState<number | null>(initial?.minYear ?? null);
+  const [maxYear, setMaxYear] = useState<number | null>(initial?.maxYear ?? null);
 
   const filtered = useMemo(() => {
     const query = normalize(search.trim());
@@ -26,6 +38,12 @@ export function useGameFilters(games: Game[]) {
         return false;
       }
       if (game.reviews < minReviews) {
+        return false;
+      }
+      if (minYear !== null && game.year < minYear) {
+        return false;
+      }
+      if (maxYear !== null && game.year > maxYear) {
         return false;
       }
       if (
@@ -37,12 +55,14 @@ export function useGameFilters(games: Game[]) {
       }
       return true;
     });
-  }, [games, selectedPlatforms, search, minReviews]);
+  }, [games, selectedPlatforms, search, minReviews, minYear, maxYear]);
 
   function clearFilters() {
     setSelectedPlatforms(new Set());
     setSearch('');
     setMinReviews(0);
+    setMinYear(null);
+    setMaxYear(null);
   }
 
   return {
@@ -52,6 +72,10 @@ export function useGameFilters(games: Game[]) {
     setSearch,
     minReviews,
     setMinReviews,
+    minYear,
+    setMinYear,
+    maxYear,
+    setMaxYear,
     filtered,
     clearFilters,
   };
