@@ -67,14 +67,23 @@ jobs:
             if (!developer) errors.push('- Falta el desarrollador.');
             if (!Number.isFinite(avgScore) || avgScore < 0 || avgScore > 100) errors.push(`- Score inválido: "${avgScoreRaw}" (debe ser un número entre 0 y 100).`);
             if (!Number.isInteger(reviews) || reviews < 0) errors.push(`- Número de reseñas inválido: "${reviewsRaw}".`);
-            // A field value containing its own "### " heading could shift
-            // which text later fields extract (the regex above finds the
-            // FIRST matching heading anywhere in the body). None of the
-            // form's fields are multi-line inputs, so this needs a crafted
-            // API submission rather than the web form — cheap to reject
-            // outright rather than reason about it further.
+            if (source && !/^https?:\/\//.test(source)) errors.push(`- La fuente debe ser un enlace http(s), o dejarse vacía: "${source}".`);
+            // Every field in the issue form is a single-line `input`, so a
+            // real newline only reaches here via a hand-crafted API
+            // submission bypassing the web form. Rejecting it closes two
+            // problems at once. First: extract()'s opening match ("### " +
+            // label) isn't anchored to a line start, but its closing
+            // boundary requires a literal "\n\n" right after a fake
+            // heading before anything can be captured as a "value" for
+            // it — so without a real newline in this value, a fake
+            // "### <other label>" substring can never satisfy that and
+            // can't shift what another field extracts. Second: a bare
+            // newline in a value rendered into the PR body's markdown
+            // table would break out of its cell. A literal "|" is rejected
+            // for the same table-breaking reason.
             for (const [name, value] of [['título', title], ['desarrollador', developer], ['fuente', source]]) {
-              if (value.includes('### ')) errors.push(`- El campo "${name}" no puede contener "### ".`);
+              if (/[\r\n]/.test(value)) errors.push(`- El campo "${name}" no puede tener saltos de línea.`);
+              if (value.includes('|')) errors.push(`- El campo "${name}" no puede contener "|".`);
             }
 
             if (errors.length > 0) {
@@ -101,6 +110,7 @@ jobs:
             // sheet's stored value exactly.
             const M = 0.5;
             const C = 67.56222559;
+            const avgScoreRounded = Math.round(avgScore * 100) / 100;
             const bayesianAvg = Math.round(((reviews / (reviews + M)) * avgScore + (M / (reviews + M)) * C) * 100) / 100;
 
             const communityPath = 'src/data/community-games.json';
@@ -116,7 +126,7 @@ jobs:
               t: title,
               p: platform,
               y: year,
-              a: Math.round(avgScore * 100) / 100,
+              a: avgScoreRounded,
               r: reviews,
               d: developer,
               b: bayesianAvg,
@@ -132,7 +142,7 @@ jobs:
             core.setOutput('platform', platform);
             core.setOutput('year', String(year));
             core.setOutput('developer', developer);
-            core.setOutput('avgScore', String(avgScore));
+            core.setOutput('avgScore', String(avgScoreRounded));
             core.setOutput('reviews', String(reviews));
             core.setOutput('bayesianAvg', String(bayesianAvg));
             core.setOutput('source', source);
