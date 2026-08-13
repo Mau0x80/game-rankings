@@ -28,7 +28,9 @@ jobs:
         with:
           script: |
             const fs = require('fs');
-            const body = context.payload.issue.body || '';
+            // Issue-form bodies are LF, but normalize defensively — a CRLF
+            // body would silently fail every "### label\n\n" match below.
+            const body = (context.payload.issue.body || '').replace(/\r\n/g, '\n');
 
             function extract(label) {
               const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -45,6 +47,7 @@ jobs:
             const developer = extract('Desarrollador');
             const avgScoreRaw = extract('Score promedio (0-100)');
             const reviewsRaw = extract('Número de reseñas consideradas');
+            const source = extract('Fuente (enlace a una reseña o página del juego)');
 
             // Keep in sync with PLATFORMS in src/constants.ts and the
             // dropdown options in .github/ISSUE_TEMPLATE/add-game.yml —
@@ -64,6 +67,15 @@ jobs:
             if (!developer) errors.push('- Falta el desarrollador.');
             if (!Number.isFinite(avgScore) || avgScore < 0 || avgScore > 100) errors.push(`- Score inválido: "${avgScoreRaw}" (debe ser un número entre 0 y 100).`);
             if (!Number.isInteger(reviews) || reviews < 0) errors.push(`- Número de reseñas inválido: "${reviewsRaw}".`);
+            // A field value containing its own "### " heading could shift
+            // which text later fields extract (the regex above finds the
+            // FIRST matching heading anywhere in the body). None of the
+            // form's fields are multi-line inputs, so this needs a crafted
+            // API submission rather than the web form — cheap to reject
+            // outright rather than reason about it further.
+            for (const [name, value] of [['título', title], ['desarrollador', developer], ['fuente', source]]) {
+              if (value.includes('### ')) errors.push(`- El campo "${name}" no puede contener "### ".`);
+            }
 
             if (errors.length > 0) {
               await github.rest.issues.createComment({
@@ -73,7 +85,10 @@ jobs:
                 body: 'No pude procesar automáticamente esta propuesta:\n\n' + errors.join('\n') +
                   '\n\nEdita los datos de este issue (o abre uno nuevo) corrigiendo lo anterior.',
               });
-              core.setFailed('Validation failed');
+              // Deliberately not core.setFailed(): an invalid submission is
+              // user input, not a workflow bug — failing the run would
+              // email the repo owner a "workflow failed" notice for every
+              // stranger's typo.
               return;
             }
 
@@ -82,7 +97,8 @@ jobs:
             // Both constants come from the Sheet's own "Bayesian average
             // info" note and were confirmed by recomputing bayesianAvg for
             // several existing rows (Super Mario Galaxy, Super Metroid,
-            // Grand Theft Auto V) and matching the sheet's stored value.
+            // Grand Theft Auto V, Super Mario Odyssey) and matching the
+            // sheet's stored value exactly.
             const M = 0.5;
             const C = 67.56222559;
             const bayesianAvg = Math.round(((reviews / (reviews + M)) * avgScore + (M / (reviews + M)) * C) * 100) / 100;
@@ -106,10 +122,20 @@ jobs:
               b: bayesianAvg,
             });
 
-            fs.writeFileSync(communityPath, JSON.stringify(community));
+            // Pretty-printed (not a single minified line, unlike games.json)
+            // so the PR this produces is actually reviewable — it's the
+            // only thing standing between an attacker-supplied submission
+            // and the live site.
+            fs.writeFileSync(communityPath, JSON.stringify(community, null, 2) + '\n');
 
             core.setOutput('title', title);
             core.setOutput('platform', platform);
+            core.setOutput('year', String(year));
+            core.setOutput('developer', developer);
+            core.setOutput('avgScore', String(avgScore));
+            core.setOutput('reviews', String(reviews));
+            core.setOutput('bayesianAvg', String(bayesianAvg));
+            core.setOutput('source', source);
 
       - name: Open pull request
         if: success() && steps.parse.outputs.title != ''
@@ -118,6 +144,12 @@ jobs:
           ISSUE_NUMBER: ${{ github.event.issue.number }}
           GAME_TITLE: ${{ steps.parse.outputs.title }}
           GAME_PLATFORM: ${{ steps.parse.outputs.platform }}
+          GAME_YEAR: ${{ steps.parse.outputs.year }}
+          GAME_DEVELOPER: ${{ steps.parse.outputs.developer }}
+          GAME_AVG_SCORE: ${{ steps.parse.outputs.avgScore }}
+          GAME_REVIEWS: ${{ steps.parse.outputs.reviews }}
+          GAME_BAYESIAN_AVG: ${{ steps.parse.outputs.bayesianAvg }}
+          GAME_SOURCE: ${{ steps.parse.outputs.source }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -128,9 +160,15 @@ jobs:
           git commit -m "Add ${GAME_TITLE} (${GAME_PLATFORM}) from #${ISSUE_NUMBER}"
           git push origin "$BRANCH"
 
+          # printf (not a heredoc) so every field is inserted as an opaque
+          # %s argument, with no dependence on exact indentation/terminator
+          # matching the way a heredoc inside an indented YAML block would need.
+          PR_BODY="$(printf 'Generado automáticamente a partir de #%s.\n\n| Campo | Valor |\n|---|---|\n| Título | %s |\n| Plataforma | %s |\n| Año | %s |\n| Desarrollador | %s |\n| Score promedio | %s |\n| Reviews | %s |\n| Bayesian AVG (calculado) | %s |\n| Fuente | %s |\n\nRevisa los datos (y la fuente, si se dio una) antes de aprobar.\n' \
+            "$ISSUE_NUMBER" "$GAME_TITLE" "$GAME_PLATFORM" "$GAME_YEAR" "$GAME_DEVELOPER" "$GAME_AVG_SCORE" "$GAME_REVIEWS" "$GAME_BAYESIAN_AVG" "${GAME_SOURCE:-(no proporcionada)}")"
+
           gh pr create \
             --title "Add game: ${GAME_TITLE}" \
-            --body "Generado automáticamente a partir de #${ISSUE_NUMBER}. Revisa los datos antes de aprobar." \
+            --body "$PR_BODY" \
             --base main \
             --head "$BRANCH"
 
