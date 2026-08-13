@@ -196,8 +196,11 @@ jobs:
           # printf (not a heredoc) so every field is inserted as an opaque
           # %s argument, with no dependence on exact indentation/terminator
           # matching the way a heredoc inside an indented YAML block would need.
-          PR_BODY="$(printf 'Generado automáticamente a partir de #%s.\n\n| Campo | Valor |\n|---|---|\n| Título | %s |\n| Plataforma | %s |\n| Año | %s |\n| Desarrollador | %s |\n| Score promedio | %s |\n| Reviews | %s |\n| Bayesian AVG (calculado) | %s |\n| Fuente | %s |\n\nRevisa los datos (y la fuente, si se dio una) antes de aprobar.\n' \
-            "$ISSUE_NUMBER" "$GAME_TITLE" "$GAME_PLATFORM" "$GAME_YEAR" "$GAME_DEVELOPER" "$GAME_AVG_SCORE" "$GAME_REVIEWS" "$GAME_BAYESIAN_AVG" "${GAME_SOURCE:-(no proporcionada)}")"
+          # "Closes #N" is a GitHub closing keyword: merging this PR into the
+          # default branch auto-closes the source issue, so it doesn't sit
+          # open forever even after its data has already landed.
+          PR_BODY="$(printf 'Generado automáticamente a partir de #%s.\n\nCloses #%s\n\n| Campo | Valor |\n|---|---|\n| Título | %s |\n| Plataforma | %s |\n| Año | %s |\n| Desarrollador | %s |\n| Score promedio | %s |\n| Reviews | %s |\n| Bayesian AVG (calculado) | %s |\n| Fuente | %s |\n\nRevisa los datos (y la fuente, si se dio una) antes de aprobar.\n' \
+            "$ISSUE_NUMBER" "$ISSUE_NUMBER" "$GAME_TITLE" "$GAME_PLATFORM" "$GAME_YEAR" "$GAME_DEVELOPER" "$GAME_AVG_SCORE" "$GAME_REVIEWS" "$GAME_BAYESIAN_AVG" "${GAME_SOURCE:-(no proporcionada)}")"
 
           gh pr create \
             --title "Add game: ${GAME_TITLE}" \
