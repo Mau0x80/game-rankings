@@ -11,7 +11,6 @@ permissions:
 
 jobs:
   add-game:
-    if: contains(github.event.issue.labels.*.name, 'add-game')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -31,6 +30,19 @@ jobs:
             // Issue-form bodies are LF, but normalize defensively — a CRLF
             // body would silently fail every "### label\n\n" match below.
             const body = (context.payload.issue.body || '').replace(/\r\n/g, '\n');
+
+            // This job runs on every new issue (not just ones from the
+            // "Agregar un juego" template) — the `add-game` label the
+            // template requests only gets attached if that label already
+            // exists in the repo, which GitHub does not create for you, so
+            // gating the job itself on `contains(issue.labels, 'add-game')`
+            // silently no-ops until someone manually creates that label.
+            // Detecting our form by its first field's heading instead has
+            // no such prerequisite. Any issue that doesn't match is simply
+            // not ours — return without commenting or failing.
+            if (!body.includes('### Título del juego')) {
+              return;
+            }
 
             function extract(label) {
               const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
