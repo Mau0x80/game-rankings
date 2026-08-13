@@ -71,16 +71,27 @@ jobs:
             // Every field in the issue form is a single-line `input`, so a
             // real newline only reaches here via a hand-crafted API
             // submission bypassing the web form. Rejecting it closes two
-            // problems at once. First: extract()'s opening match ("### " +
-            // label) isn't anchored to a line start, but its closing
-            // boundary requires a literal "\n\n" right after a fake
-            // heading before anything can be captured as a "value" for
-            // it — so without a real newline in this value, a fake
-            // "### <other label>" substring can never satisfy that and
-            // can't shift what another field extracts. Second: a bare
-            // newline in a value rendered into the PR body's markdown
-            // table would break out of its cell. A literal "|" is rejected
-            // for the same table-breaking reason.
+            // problems at once. Second problem first, since it's simpler: a
+            // bare newline (or "|") in a value rendered into the PR body's
+            // markdown table would break out of its cell.
+            //
+            // First problem: a fake "### <other label>" embedded in one of
+            // these fields could make extract() capture the wrong text for
+            // that other field, since extract()'s search isn't anchored to
+            // a line start. This alone doesn't require a newline in THIS
+            // value — the fake heading's required trailing "\n\n" can be
+            // satisfied by the field separator that already follows any
+            // single-line field in a well-formed body. But no two free-text
+            // fields (title/developer/source) are adjacent — platform,
+            // year, avgScore, or reviews always sits between them — so a
+            // successful hijack always swallows at least one more real
+            // "### <label>\n\n" boundary before it can stop capturing. That
+            // swallowed text either lands in title/developer/source (now
+            // caught by this same newline check) or corrupts platform's
+            // whitelist match / year's, avgScore's, or reviews' Number()
+            // validation (caught there). So the two checks together close
+            // this, even though neither one alone is doing it by rejecting
+            // a raw newline in the hijacking field itself.
             for (const [name, value] of [['título', title], ['desarrollador', developer], ['fuente', source]]) {
               if (/[\r\n]/.test(value)) errors.push(`- El campo "${name}" no puede tener saltos de línea.`);
               if (value.includes('|')) errors.push(`- El campo "${name}" no puede contener "|".`);
