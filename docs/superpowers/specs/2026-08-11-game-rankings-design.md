@@ -26,8 +26,10 @@ El sheet seguirá siendo la fuente de verdad para agregar juegos en el futuro (l
 
 **Explícitamente fuera de alcance (fases futuras):**
 - Página de detalle individual por juego.
-- Panel de administración con formulario para agregar juegos (se sigue usando Google Sheets + script de sync).
+- Panel de administración con login para agregar juegos (se sigue usando Google Sheets + script de sync para el dueño del sitio).
 - Lectura en vivo del Sheet en cada visita (se descartó por rendimiento con ~28,800 filas y límites de la API de Sheets).
+
+**Agregado post-MVP:** un canal de contribución pública sin necesidad de acceso al Sheet ni al repo — cualquiera puede abrir un GitHub Issue con una plantilla estructurada; un workflow lo valida y abre un Pull Request contra `src/data/community-games.json` (un archivo separado de `games.json`, para que `sync-data` no lo sobrescriba); el dueño del sitio revisa y aprueba el PR manualmente. No es un panel de administración (no hay login ni escritura directa a `main`), sino un flujo de propuesta-y-revisión. Ver README, sección "Sugerencias de terceros".
 
 ## Dirección visual
 

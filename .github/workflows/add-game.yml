@@ -1,0 +1,138 @@
+name: Add Game from Issue
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  add-game:
+    if: contains(github.event.issue.labels.*.name, 'add-game')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Parses the issue body and writes the new entry to
+      # src/data/community-games.json. Runs entirely inside the Node.js
+      # sandbox actions/github-script provides — the issue body (untrusted,
+      # attacker-controlled text) is only ever read as a JS string here,
+      # never interpolated into a shell command, so there's no
+      # script-injection risk from a crafted submission.
+      - name: Parse and validate issue
+        id: parse
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const body = context.payload.issue.body || '';
+
+            function extract(label) {
+              const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+              const re = new RegExp('### ' + escaped + '\\s*\\n\\n([\\s\\S]*?)(?=\\n### |$)');
+              const m = body.match(re);
+              if (!m) return '';
+              const value = m[1].trim();
+              return value === '_No response_' ? '' : value;
+            }
+
+            const title = extract('Título del juego');
+            const platform = extract('Plataforma');
+            const yearRaw = extract('Año de lanzamiento');
+            const developer = extract('Desarrollador');
+            const avgScoreRaw = extract('Score promedio (0-100)');
+            const reviewsRaw = extract('Número de reseñas consideradas');
+
+            // Keep in sync with PLATFORMS in src/constants.ts and the
+            // dropdown options in .github/ISSUE_TEMPLATE/add-game.yml —
+            // this is a closed, effectively-frozen list (the archive's own
+            // historical platform codes), so the duplication is accepted
+            // rather than adding a build step just to share it.
+            const PLATFORMS = ['PC','MAC','PS','PS2','PS3','PS4','PSP','VITA','SNES','N64','GC','WII','WIIU','NS','GB','GBC','GBA','DS','3DS','XBOX','X360','XONE','GEN','SCD','SAT','DC','MOBI','NGE','IOS'];
+
+            const year = Number(yearRaw);
+            const avgScore = Number(avgScoreRaw);
+            const reviews = Number(reviewsRaw);
+
+            const errors = [];
+            if (!title) errors.push('- Falta el título.');
+            if (!PLATFORMS.includes(platform)) errors.push(`- Plataforma inválida: "${platform}".`);
+            if (!Number.isInteger(year) || year < 1970 || year > 2100) errors.push(`- Año inválido: "${yearRaw}".`);
+            if (!developer) errors.push('- Falta el desarrollador.');
+            if (!Number.isFinite(avgScore) || avgScore < 0 || avgScore > 100) errors.push(`- Score inválido: "${avgScoreRaw}" (debe ser un número entre 0 y 100).`);
+            if (!Number.isInteger(reviews) || reviews < 0) errors.push(`- Número de reseñas inválido: "${reviewsRaw}".`);
+
+            if (errors.length > 0) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: 'No pude procesar automáticamente esta propuesta:\n\n' + errors.join('\n') +
+                  '\n\nEdita los datos de este issue (o abre uno nuevo) corrigiendo lo anterior.',
+              });
+              core.setFailed('Validation failed');
+              return;
+            }
+
+            // Same Bayesian-average formula the rest of the dataset uses —
+            // m = 0.5, C = 67.56222559 (the dataset-wide mean rating).
+            // Both constants come from the Sheet's own "Bayesian average
+            // info" note and were confirmed by recomputing bayesianAvg for
+            // several existing rows (Super Mario Galaxy, Super Metroid,
+            // Grand Theft Auto V) and matching the sheet's stored value.
+            const M = 0.5;
+            const C = 67.56222559;
+            const bayesianAvg = Math.round(((reviews / (reviews + M)) * avgScore + (M / (reviews + M)) * C) * 100) / 100;
+
+            const communityPath = 'src/data/community-games.json';
+            const community = fs.existsSync(communityPath)
+              ? JSON.parse(fs.readFileSync(communityPath, 'utf8'))
+              : [];
+
+            // Negative, keyed to the issue number: guaranteed unique (issue
+            // numbers never repeat in a repo) and distinguishable at a
+            // glance from every archive id, which are all positive.
+            community.push({
+              id: -context.issue.number,
+              t: title,
+              p: platform,
+              y: year,
+              a: Math.round(avgScore * 100) / 100,
+              r: reviews,
+              d: developer,
+              b: bayesianAvg,
+            });
+
+            fs.writeFileSync(communityPath, JSON.stringify(community));
+
+            core.setOutput('title', title);
+            core.setOutput('platform', platform);
+
+      - name: Open pull request
+        if: success() && steps.parse.outputs.title != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          GAME_TITLE: ${{ steps.parse.outputs.title }}
+          GAME_PLATFORM: ${{ steps.parse.outputs.platform }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          BRANCH="add-game/issue-${ISSUE_NUMBER}"
+          git checkout -b "$BRANCH"
+          git add src/data/community-games.json
+          git commit -m "Add ${GAME_TITLE} (${GAME_PLATFORM}) from #${ISSUE_NUMBER}"
+          git push origin "$BRANCH"
+
+          gh pr create \
+            --title "Add game: ${GAME_TITLE}" \
+            --body "Generado automáticamente a partir de #${ISSUE_NUMBER}. Revisa los datos antes de aprobar." \
+            --base main \
+            --head "$BRANCH"
+
+          gh issue comment "$ISSUE_NUMBER" \
+            --body "¡Gracias! Abrí un Pull Request con estos datos para que un mantenedor lo revise."

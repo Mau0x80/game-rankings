@@ -1,0 +1,97 @@
+name: Agregar un juego
+description: Sugiere un juego para agregar al archivo de Game Rankings
+title: "[Nuevo juego] "
+labels: ["add-game"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Completa estos datos. Un bot abrirá automáticamente un Pull Request
+        con tu propuesta, y un mantenedor la revisará antes de publicarla —
+        no se agrega nada al sitio sin esa revisión.
+
+  - type: input
+    id: title
+    attributes:
+      label: Título del juego
+      placeholder: "Super Mario Odyssey"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Plataforma
+      options:
+        - PC
+        - MAC
+        - PS
+        - PS2
+        - PS3
+        - PS4
+        - PSP
+        - VITA
+        - SNES
+        - N64
+        - GC
+        - WII
+        - WIIU
+        - NS
+        - GB
+        - GBC
+        - GBA
+        - DS
+        - 3DS
+        - XBOX
+        - X360
+        - XONE
+        - GEN
+        - SCD
+        - SAT
+        - DC
+        - MOBI
+        - NGE
+        - IOS
+    validations:
+      required: true
+
+  - type: input
+    id: year
+    attributes:
+      label: Año de lanzamiento
+      placeholder: "2017"
+    validations:
+      required: true
+
+  - type: input
+    id: developer
+    attributes:
+      label: Desarrollador
+      placeholder: "Nintendo"
+    validations:
+      required: true
+
+  - type: input
+    id: avgScore
+    attributes:
+      label: "Score promedio (0-100)"
+      placeholder: "95.5"
+    validations:
+      required: true
+
+  - type: input
+    id: reviews
+    attributes:
+      label: Número de reseñas consideradas
+      placeholder: "20"
+    validations:
+      required: true
+
+  - type: input
+    id: source
+    attributes:
+      label: "Fuente (enlace a una reseña o página del juego)"
+      description: Opcional, pero ayuda al mantenedor a verificar los datos.
+      placeholder: "https://..."
+    validations:
+      required: false
